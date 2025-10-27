@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from sqlalchemy import create_engine
-from urllib.parse import quote_plus
+import sqlite3
+import os
 
 # Page configuration
 st.set_page_config(
@@ -14,32 +14,27 @@ st.set_page_config(
 # Database connection
 @st.cache_resource
 def get_database_connection():
-    mysql_config = {
-        'host': 'localhost',
-        'user': 'root',
-        'password': 'sql@123',  # Change to your MySQL password
-        'database': 'phonepe_pulse'
-    }
-    
-    engine = create_engine(
-        f"mysql+pymysql://{mysql_config['user']}:{quote_plus(mysql_config['password'])}@"
-        f"{mysql_config['host']}/{mysql_config['database']}"
-    )
-    return engine
+    # Use SQLite database
+    db_path = 'phonepe_data.db'
+    if not os.path.exists(db_path):
+        st.error(f"Database file '{db_path}' not found!")
+        return None
+    conn = sqlite3.connect(db_path, check_same_thread=False)
+    return conn
 
 # Load data
 @st.cache_data
 def load_transaction_data():
-    engine = get_database_connection()
+    conn = get_database_connection()
     query = "SELECT * FROM aggregated_transaction"
-    df = pd.read_sql(query, engine)
+    df = pd.read_sql(query, conn)
     return df
 
 @st.cache_data
 def load_user_data():
-    engine = get_database_connection()
+    conn = get_database_connection()
     query = "SELECT * FROM aggregated_user"
-    df = pd.read_sql(query, engine)
+    df = pd.read_sql(query, conn)
     return df
 
 # Main app
@@ -172,4 +167,3 @@ def show_users():
 
 if __name__ == "__main__":
     main()
-    
